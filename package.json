@@ -12,6 +12,7 @@
   "description": "A dynamic API for displaying GitHub streak stats as a widget",
   "dependencies": {
     "axios": "^1.7.9",
+    "dotenv": "^16.4.7",
     "express": "^4.21.2"
   }
 }

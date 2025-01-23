@@ -1,53 +1,66 @@
+require('dotenv').config();
 const express = require('express');
-const axios = require('axios');
-const cache = require('./cache'); 
-const { fetchStats } = require('./fetchStats'); 
+const { fetchStats } = require('./fetchStats');
+const cache = require('./cache');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // Dynamic color selection based on streak length
 function getColor(currentStreak) {
-    if (currentStreak >= 100) return "purple";
-    if (currentStreak >= 15) return "green";
-    if (currentStreak >= 5) return "yellow";
-    return "red";
+  if (currentStreak >= 100) return "purple";
+  if (currentStreak >= 15) return "green";
+  if (currentStreak >= 5) return "yellow";
+  return "red";
 }
 
-// API endpoint to fetch streak stats with Shields.io format
+// API endpoint to fetch streak stats
 app.get('/api/streak/:username', async (req, res) => {
-    const { username } = req.params;
+  const { username } = req.params;
 
-    if (cache.has(username)) {
-        const stats = cache.get(username);
-        const color = getColor(stats.currentStreak);
-        return res.json({
-            schemaVersion: 1,
-            label: "GitHub Streak",
-            message: `${stats.currentStreak} days (longest: ${stats.longestStreak} days)`,
-            color,
-        });
-    }
+  // Check if the data is already cached
+  if (cache.has(username)) {
+    const stats = cache.get(username);
+    const color = getColor(stats.currentStreak);
+    return res.json({
+      schemaVersion: 1,
+      label: "GitHub Streak",
+      message: `${stats.currentStreak} days (longest: ${stats.longestStreak} days)`,
+      color,
+    });
+  }
 
-    try {
-        const stats = await fetchStats(username);
-        cache.set(username, stats); 
-        const color = getColor(stats.currentStreak);
-        res.json({
-            schemaVersion: 1,
-            label: "GitHub Streak",
-            message: `${stats.currentStreak} days (longest: ${stats.longestStreak} days)`,
-            color,
-        });
-    } catch (error) {
-        console.error(error.message);
-        res.status(500).json({
-            schemaVersion: 1,
-            label: "GitHub Streak",
-            message: "error",
-            color: "red",
-        });
-    }
+  try {
+    // Fetch stats from GitHub API
+    const stats = await fetchStats(username);
+
+    // Cache the stats for future requests
+    cache.set(username, stats);
+
+    // Determine the color based on the current streak
+    const color = getColor(stats.currentStreak);
+
+    // Return the response in Shields.io format
+    res.json({
+      schemaVersion: 1,
+      label: "GitHub Streak",
+      message: `${stats.currentStreak} days (longest: ${stats.longestStreak} days)`,
+      color,
+    });
+  } catch (error) {
+    console.error('Error in /api/streak/:username:', error.message);
+
+    // Return an error response
+    res.status(500).json({
+      schemaVersion: 1,
+      label: "GitHub Streak",
+      message: "error",
+      color: "red",
+    });
+  }
 });
 
-app.listen(PORT, () => console.log(`API running on http://localhost:${PORT}`));
+// Start the server
+app.listen(PORT, () => {
+  console.log(`API running on http://localhost:${PORT}`);
+});

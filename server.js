@@ -50,7 +50,7 @@ app.get('/api/streak/:username', async (req, res) => {
   } catch (error) {
     console.error('Error in /api/streak/:username:', error.message);
 
-    // Return an error response
+    // Return an error response in Shields.io format
     res.status(500).json({
       schemaVersion: 1,
       label: "GitHub Streak",
